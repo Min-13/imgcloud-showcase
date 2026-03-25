@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package imageprocessor;
+
+// ImageProcessor service handles image processing operations via gRPC
+service ImageProcessor {
+  // ProcessImage performs various image operations on the input image
+  rpc ProcessImage(ProcessRequest) returns (ProcessResponse);
+}
+
+// ProcessRequest contains the image data and operation parameters
+message ProcessRequest {
+  bytes image_data = 1;      // Input image in PNG/JPEG format
+  string operation = 2;       // Operation type: resize, grayscale, blur, edge_detection, rotate, mirror
+  int32 width = 3;           // Target width for resize operation
+  int32 height = 4;          // Target height for resize operation
+  int32 kernel_size = 5;     // Kernel size for blur operation (must be odd)
+  int32 angle = 6;           // Rotation angle in degrees
+  string direction = 7;      // Mirror direction: horizontal or vertical
+}
+
+// ProcessResponse contains the processed image or error message
+message ProcessResponse {
+  bytes image_data = 1;      // Output image in PNG format
+  string error = 2;          // Error message if processing failed
+}

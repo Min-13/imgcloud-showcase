@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Processing Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .status-indicator {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            margin: 4px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .status-healthy {
+            background: #4caf50;
+        }
+        
+        .status-degraded {
+            background: #ff9800;
+        }
+        
+        .status-unavailable {
+            background: #666;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input[type="file"],
+        select,
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="file"]:focus,
+        select:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .size-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result img {
+            max-width: 100%;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖼️ Image Processing Service</h1>
+            <p>Upload and process images with various operations</p>
+            <div id="statusIndicator" class="status-indicator" style="display: none;">
+                <div id="statusContent"></div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <form id="processForm">
+                <div class="form-group">
+                    <label for="imageFile">Select Image</label>
+                    <input type="file" id="imageFile" name="image" accept="image/*" required>
+                    <div id="preview" class="preview"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="operation">Operation</label>
+                    <select id="operation" name="operation" required>
+                        <option value="">-- Select Operation --</option>
+                        <option value="resize">Resize</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="blur">Blur</option>
+                        <option value="edge_detection">Edge Detection</option>
+                        <option value="rotate">Rotate</option>
+                        <option value="mirror">Mirror</option>
+                    </select>
+                </div>
+                
+                <div id="resizeParams" class="form-group" style="display: none;">
+                    <label>Dimensions</label>
+                    <div class="size-inputs">
+                        <div>
+                            <input type="number" id="width" name="width" placeholder="Width (px)" min="1">
+                        </div>
+                        <div>
+                            <input type="number" id="height" name="height" placeholder="Height (px)" min="1">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="blurParams" class="form-group" style="display: none;">
+                    <label for="kernel_size">Kernel Size (must be odd)</label>
+                    <input type="number" id="kernel_size" name="kernel_size" placeholder="5" min="1" step="2" value="5">
+                </div>
+                
+                <div id="rotateParams" class="form-group" style="display: none;">
+                    <label for="angle">Rotation Angle (degrees)</label>
+                    <input type="number" id="angle" name="angle" placeholder="e.g., 90" step="1">
+                </div>
+                
+                <div id="mirrorParams" class="form-group" style="display: none;">
+                    <label for="direction">Mirror Direction</label>
+                    <select id="direction" name="direction">
+                        <option value="horizontal">Horizontal</option>
+                        <option value="vertical">Vertical</option>
+                    </select>
+                </div>
+                
+                <button type="submit">Process Image</button>
+            </form>
+            
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: #666;">Processing your image...</p>
+            </div>
+            
+            <div id="error" class="error"></div>
+            
+            <div id="result" class="result">
+                <h3 style="margin-bottom: 15px;">Processed Image:</h3>
+                <img id="resultImage" src="" alt="Processed image">
+                <div style="margin-top: 15px; text-align: center;">
+                    <a id="downloadLink" download="processed-image.png" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                        ⬇️ Download Image
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('processForm');
+        const operationSelect = document.getElementById('operation');
+        const resizeParams = document.getElementById('resizeParams');
+        const blurParams = document.getElementById('blurParams');
+        const rotateParams = document.getElementById('rotateParams');
+        const mirrorParams = document.getElementById('mirrorParams');
+        const imageFileInput = document.getElementById('imageFile');
+        const preview = document.getElementById('preview');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const result = document.getElementById('result');
+        const resultImage = document.getElementById('resultImage');
+        const downloadLink = document.getElementById('downloadLink');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusContent = document.getElementById('statusContent');
+        
+        // Check system health and display status
+        let healthCheckInterval = null;
+        
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const health = await response.json();
+                
+                statusIndicator.style.display = 'block';
+                
+                let html = '<div style="margin-bottom: 8px;"><strong>System Status:</strong> ';
+                
+                // Overall status
+                if (health.lab04_features) {
+                    html += '<span class="status-badge status-healthy">✓ LAB04 Mode</span>';
+                } else {
+                    html += '<span class="status-badge status-degraded">⚠ LAB03 Mode</span>';
+                }
+                
+                html += '</div><div style="font-size: 0.85em;">';
+                
+                // Service statuses
+                const services = health.services || {};
+                const serviceLabels = {
+                    processor: '🖥️ Processor',
+                    minio: '📦 Storage (MinIO)',
+                    redis: '⚡ Cache (Redis)',
+                    database: '💾 Database (PostgreSQL)'
+                };
+                
+                for (const [service, label] of Object.entries(serviceLabels)) {
+                    const status = services[service];
+                    if (status === 'healthy') {
+                        html += `<span class="status-badge status-healthy">${label}</span>`;
+                    } else if (status === 'unavailable') {
+                        html += `<span class="status-badge status-unavailable">${label} (offline)</span>`;
+                    }
+                }
+                
+                html += '</div>';
+                statusContent.innerHTML = html;
+            } catch (err) {
+                console.error('Health check failed:', err);
+                statusIndicator.style.display = 'block';
+                statusContent.innerHTML = '<span class="status-badge status-unavailable">⚠ Unable to check status</span>';
+            }
+        }
+        
+        // Check health on page load
+        checkHealth();
+        
+        // Refresh health status every 30 seconds (only create interval if not already running)
+        if (!healthCheckInterval) {
+            healthCheckInterval = setInterval(checkHealth, 30000);
+        }
+        
+        // Cleanup interval on page unload
+        window.addEventListener('beforeunload', function() {
+            if (healthCheckInterval) {
+                clearInterval(healthCheckInterval);
+                healthCheckInterval = null;
+            }
+        });
+        
+        // Show/hide parameters based on operation
+        operationSelect.addEventListener('change', function() {
+            resizeParams.style.display = this.value === 'resize' ? 'block' : 'none';
+            blurParams.style.display = this.value === 'blur' ? 'block' : 'none';
+            rotateParams.style.display = this.value === 'rotate' ? 'block' : 'none';
+            mirrorParams.style.display = this.value === 'mirror' ? 'block' : 'none';
+        });
+        
+        // Preview uploaded image
+        imageFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = 'Preview';
+                    preview.innerHTML = '';
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Handle form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Hide previous results/errors
+            error.classList.remove('show');
+            result.classList.remove('show');
+            loading.classList.add('show');
+            
+            // Create form data
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                loading.classList.remove('show');
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Processing failed');
+                }
+                
+                // Get the image blob
+                const blob = await response.blob();
+                const imageUrl = URL.createObjectURL(blob);
+                
+                // Display result
+                resultImage.src = imageUrl;
+                downloadLink.href = imageUrl;
+                result.classList.add('show');
+                
+            } catch (err) {
+                loading.classList.remove('show');
+                error.textContent = '❌ Error: ' + err.message;
+                error.classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+services:
+  # Image processor service (C++ backend with gRPC and HTTP)
+  # IMPORTANT: Replace 'STUDENTNAME' with your actual student username throughout this file
+  STUDENTNAME-imgprocessor:
+    build:
+      context: .
+      dockerfile: imgprocessor/Dockerfile
+    container_name: STUDENTNAME-imgprocessor
+    # Note: No public ports exposed - only accessible within Docker network
+    environment:
+      - HTTP_PORT=8080
+      - GRPC_PORT=50051
+    networks:
+      - STUDENTNAME-network  # Use your unique network name
+
+  # Frontend service (Python/Flask)
+  STUDENTNAME-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: STUDENTNAME-frontend
+    ports:
+      - "YOUR_PORT:8080"  # Replace YOUR_PORT with your assigned port from PORTS.md
+    environment:
+      - PORT=8080
+      - PROCESSOR_HOST=STUDENTNAME-imgprocessor  # Must match imgprocessor service name
+      - PROCESSOR_HTTP_PORT=8080
+      - PROCESSOR_GRPC_PORT=50051
+    depends_on:
+      - STUDENTNAME-imgprocessor
+    networks:
+      - STUDENTNAME-network  # Must match the network name above
+
+# Define a unique network for your services
+# This prevents conflicts with other students' containers
+networks:
+  STUDENTNAME-network:  # Replace STUDENTNAME with your username
+    driver: bridge

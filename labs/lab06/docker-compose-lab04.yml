@@ -1,0 +1,111 @@
+services:
+  # MinIO object storage service (per-student)
+  # Provides S3-compatible storage for images
+  STUDENTNAME-minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin123
+    volumes:
+      - STUDENTNAME-minio-data:/data
+    networks:
+      - STUDENTNAME-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # No public ports - accessed internally by frontend
+
+  # Redis cache and session storage service (per-student)
+  # Used for sessions, thumbnail cache, and job queue
+  STUDENTNAME-redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - STUDENTNAME-redis-data:/data
+    networks:
+      - STUDENTNAME-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    # No public ports - accessed internally by frontend and imgprocessor
+
+  # Image processor service (C++ backend with gRPC and HTTP)
+  # Same as LAB03 - no changes needed for LAB04
+  STUDENTNAME-imgprocessor:
+    build:
+      context: .
+      dockerfile: imgprocessor/Dockerfile
+    environment:
+      - HTTP_PORT=8080
+      - GRPC_PORT=50051
+    networks:
+      - STUDENTNAME-network
+    # No public ports - accessed internally by frontend via gRPC
+
+  # Frontend service (Python/Flask)
+  # Provides web UI and REST API with LAB04 enhancements
+  STUDENTNAME-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "YOUR_PORT:8080"  # Replace YOUR_PORT with your assigned port from PORTS.md
+    environment:
+      - PORT=8080
+      # Image processor configuration
+      - PROCESSOR_HOST=STUDENTNAME-imgprocessor
+      - PROCESSOR_HTTP_PORT=8080
+      - PROCESSOR_GRPC_PORT=50051
+      # MinIO configuration
+      - MINIO_HOST=STUDENTNAME-minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin123
+      - MINIO_BUCKET=images
+      - MINIO_SECURE=false
+      # Redis configuration
+      - REDIS_HOST=STUDENTNAME-redis
+      - REDIS_PORT=6379
+      # PostgreSQL configuration (provided by instructor)
+      # Each student has their own DATABASE (not just a schema)
+      # Use '420s26-postgres' as the host when connecting via Docker network
+      # Use instructor-provided hostname/IP for external access
+      # Example connection strings:
+      #   Docker network: postgresql://alice:password@420s26-postgres:5432/alice
+      #   External: postgresql://alice:password@csc.wils.one:5432/alice
+      - DATABASE_URL=postgresql://STUDENTNAME:PASSWORD@420s26-postgres:5432/STUDENTNAME
+      - DB_SCHEMA=STUDENTNAME
+      # Session configuration
+      - SECRET_KEY=change-this-to-a-random-secret-key
+      - SESSION_TIMEOUT=3600
+    depends_on:
+      STUDENTNAME-imgprocessor:
+        condition: service_started
+      STUDENTNAME-minio:
+        condition: service_healthy
+      STUDENTNAME-redis:
+        condition: service_healthy
+    networks:
+      - STUDENTNAME-network
+      - shared-network  # Required for PostgreSQL access
+
+# Define volumes for data persistence
+volumes:
+  STUDENTNAME-minio-data:
+    driver: local
+  STUDENTNAME-redis-data:
+    driver: local
+
+# Define a unique network for your services
+# This prevents conflicts with other students' containers
+networks:
+  STUDENTNAME-network:
+    driver: bridge
+  shared-network:
+    external: true
+    name: 420s26-shared-services

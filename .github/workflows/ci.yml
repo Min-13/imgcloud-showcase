@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-python-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'frontend/requirements.txt'
+
+      - name: Install frontend dependencies
+        run: pip install -r frontend/requirements.txt
+
+      - name: Generate gRPC protobuf code
+        working-directory: frontend
+        run: |
+          python -m grpc_tools.protoc \
+            -I../imgprocessor \
+            --python_out=. \
+            --grpc_python_out=. \
+            ../imgprocessor/image_processor.proto
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: python -m pytest test_empty_params.py test_form_submission.py -v
+
+  build-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: frontend/Dockerfile
+          push: false
+          tags: frontend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

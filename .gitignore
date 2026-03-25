@@ -1,0 +1,56 @@
+# Binaries
+server
+imgcloud
+imgprocessor/imgprocessor
+imgprocessor/test_strlen
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+
+# Generated protobuf files
+*_pb2.py
+*_pb2_grpc.py
+
+# Build artifacts
+dist/
+build/
+*.o
+*.a
+cpp-lib/*.o
+cpp-lib/*.a
+cpp-lib/*.so
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+/tmp/
+
+# Solutions (for instructors only - not for students)
+# Uncomment this line to hide solutions from students:
+# solutions/
