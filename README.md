@@ -8,6 +8,7 @@ ImgCloud is a containerized image processing service designed to help students l
 - **LAB03**: Multi-container microservices with gRPC communication
 - **LAB04**: Persistent storage, state management, and databases
 - **LAB05**: Database connections, caching, and admin interfaces
+- **LAB06**: Continuous Integration with GitHub Actions
 
 All lab instructions are located in the `labs/` directory.
 
