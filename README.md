@@ -4,13 +4,13 @@
 
 ImgCloud is a containerized image processing service designed to help students learn Docker and microservices architecture. The course progresses through multiple labs, each building on the previous:
 
-
+- **LAB01**: Setting Up Docker Container
 - **LAB02**: Basic Docker containerization and multi-stage builds
 - **LAB03**: Multi-container microservices with gRPC communication
 - **LAB04**: Persistent storage, state management, and databases
 - **LAB05**: Database connections, caching, and admin interfaces
 - **LAB06**: Continuous Integration with GitHub Actions
-- **Lab07**: Horizontal Scaling and TLS Termination
+- **LAB07**: Horizontal Scaling and TLS Termination
 
 All lab instructions are located in the `labs/` directory.
 
