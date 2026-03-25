@@ -11,7 +11,7 @@ ImgCloud is a containerized image processing service designed to help students l
 
 All lab instructions are located in the `labs/` directory.
 
-## Current Architecture (Lab 04)
+## Current Architecture
 
 ```
 User Browser → Frontend (Python/Flask)
