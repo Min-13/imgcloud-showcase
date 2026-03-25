@@ -1,0 +1,102 @@
+services:
+  # Image processor service (C++ backend with gRPC and HTTP)
+  # IMPORTANT: Replace 'STUDENTNAME' with your actual student username throughout this file
+  admin:
+    build:
+      context: ./admin
+      dockerfile: python/Dockerfile
+    container_name: mthawzin-admin
+    ports:
+      - "30068:8090"
+    environment:
+      ADMIN_PORT: "8090"
+      CACHE_TTL: "300"
+      DATABASE_URL: "postgresql://mthawzin:mthawzin1@420s26-postgres:5432/mthawzin"
+      REDIS_URL: "redis://mthawzin-redis:6379/0"
+    depends_on:
+      - mthawzin-redis
+    networks:
+      - mthawzin-network
+      - shared-postgres
+
+  mthawzin-imgprocessor:
+    build:
+      context: .
+      dockerfile: python/Dockerfile
+    container_name: mthawzin-imgprocessor
+    # Note: No public ports exposed - only accessible within Docker network
+    environment:
+      HTTP_PORT: "8080"
+      GRPC_PORT: "50051"
+    networks:
+      mthawzin-network: {}  # Use your unique network name
+
+  mthawzin-minio:
+    image: minio/minio:latest
+    container_name: mthawzin-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: "minioadmin"
+      MINIO_ROOT_PASSWORD: "minioadmin"
+    volumes:
+      - mthawzin-minio-data:/data
+    networks:
+      mthawzin-network: {}
+
+  mthawzin-redis:
+    image: redis:7-alpine
+    container_name: mthawzin-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - mthawzin-redis-data:/data
+    networks:
+      mthawzin-network: {}
+
+  # Frontend service (Python/Flask)
+  mthawzin-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: mthawzin-frontend
+    ports:
+      - "30069:8080"  # Replace YOUR_PORT with your assigned port from PORTS.md
+    environment:
+      PORT: "8080"
+      PROCESSOR_HOST: "mthawzin-imgprocessor" # Must match imgprocessor service name
+      PROCESSOR_HTTP_PORT: "8080"
+      PROCESSOR_GRPC_PORT: "50051"
+
+      MINIO_HOST: "mthawzin-minio"
+      MINIO_PORT: "9000"
+      MINIO_ACCESS_KEY: "minioadmin"
+      MINIO_SECRET_KEY: "minioadmin"
+      MINIO_BUCKET: "images"
+      MINIO_SECURE: "false"
+
+      REDIS_HOST: "mthawzin-redis"
+      REDIS_PORT: "6379"
+      DATABASE_URL: "postgresql://mthawzin:mthawzin1@420s26-postgres:5432/mthawzin"
+      DB_SCHEMA: "mthawzin"
+
+    depends_on:
+      mthawzin-imgprocessor:
+        condition: service_started
+      mthawzin-minio:
+        condition: service_started
+    networks:
+      mthawzin-network: {}
+      shared-postgres: {}
+
+# Define a unique network for your services
+# This prevents conflicts with other students' containers
+networks:
+  mthawzin-network:  # Replace STUDENTNAME with your username
+    driver: bridge
+
+  shared-postgres:
+    external: true
+    name: 420s26-shared-services
+
+volumes:
+  mthawzin-minio-data: {}
+  mthawzin-redis-data: {}
